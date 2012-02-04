@@ -1,6 +1,7 @@
 \documentclass[a4paper,11pt]{report}
 \usepackage[latin1]{inputenc}
 \usepackage[english]{babel}
+\bibliographystyle{unsrt}
 
 \title{Building data.eurecom.fr}
 \author{Anne-Elisabeth Gazet}
@@ -19,15 +20,15 @@ The web as we know it today mainly consists of documents that are linked togethe
 from the W3C Semantic Web FAQ\footnote{http://www.w3.org/2001/sw/SW-FAQ}
 \end{flushright}
 \end{quotation}
-In order to achieve these goals, new technologies were developped:
+In order to achieve these goals, new technologies were developed:
 \begin{itemize}
 \item RDF, for Resource Description Framework, is the main building block of the Semantic Web. It's a simple interchange format, where data is represented as triples of the form (subject, predicate, object) ;
 \item OWL (Web Ontology Language) and RDFS (RDF Schema) are vocabularies for describing RDF properties and classes ;
 \item SPARQL (SPARQL Protocol and RDF Query Language) is a protocol and query language for semantic web data sources ;
 \item SPARQL Update, a companion language for SPARQL, enables modifying a data source. %(It should soon become a W3C recommendation.)
 \end{itemize}
-%
-%Tom Heath and Christian Bizer (2011) Linked Data: Evolving the Web into a Global Data Space (1st edition). Synthesis Lectures on the Semantic Web: Theory and Technology, 1:1, 1-136. Morgan & Claypool, http://linkeddatabook.com/editions/1.0/
+
+See~\cite{Heath2011} if you want to learn more about the Linked Data paradigm. 
 
 \section*{Motivation for the project}
 There is a trend to increase government transparency by releasing more and more public sector information on the web as linked data. The first initiative of the kind was data.gov.uk in the United Kingdom, which was followed by similar projects around the world. 
@@ -41,7 +42,7 @@ Universities and schools also generate a lot of data about students, promotions,
 
 This project was inspired by recent similar initiatives in other universities. I studied them in order to see what kind of data they made available, which approach they took in order to publish their data, and what kind of applications were built thanks to the newly exposed data. 
 \section*{data.open.ac.uk - open linked data from The Open University}
-The OU's LUCERO (Linking University Content for Education and Research Online) project\footnote{http://lucero-project.info/lb/} was the first initiative to expose public information from a university as Linked Open Data. The data.open.ac.uk platform was developped as part of the LUCERO project. 
+The OU's LUCERO (Linking University Content for Education and Research Online) project\footnote{http://lucero-project.info/lb/} was the first initiative to expose public information from a university as Linked Open Data. The data.open.ac.uk platform was developed as part of the LUCERO project. 
 
 Datasets exposed on this platform include:
 \begin{description}
@@ -79,8 +80,38 @@ Applications
 
 \chapter{Data model and design of our ontology}
 \section{Available data}
-One of the difficulties with this project is that we had to think about the data model before actually getting access to the data. To have a clearer idea of what data was stored at EURECOM, I had a look at the internet and intranet sites of the institute. The information available there is mainly about people (teachers, researchers, doctoral students, staff members), research outputs and courses. Assuming these would be the datasets we could access later on, we designed an RDF data model. The aim of this model is to fit the data accurately, as well as to make the data reusable by third parties. 
+One of the difficulties with this project is that we had to think about the data model before actually getting access to the data. To have a clearer idea of what data was stored at EURECOM, I had a look at the internet and intranet sites of the institute. The information available there is mainly about: 
+\begin{itemize}
+\item people (teachers, researchers, doctoral students, staff members), 
+\item research outputs, 
+\item courses. 
+\end{itemize}
+Assuming these would be the datasets we would access later on, we designed an RDF data model. The aim of this model is to fit the data accurately, as well as to make the data reusable by third parties. 
+ 
 \section{Choice of external vocabularies}
+To achieve re-usability, it is paramount to represent data using vocabularies that are used by other projects as well. This way, the data will be easier to consume for existing applications. Furthermore, the fact that a vocabulary was accepted by the community as a de facto standard is a good hint that this vocabulary is well designed, and well fitted to its domain. 
+
+%tools to find out about vocabs : 
+
+Yet, since there are still relatively few universities publishing their data as Linked Data, we could not rely only on popularity to make choices. Besides, each dataset being unique, there are relationships that we wanted to represent, to which we did not find any equivalent in the other projects' datasets. In this case, we used tools such as Schema-Cache\footnote{http://schemacache.com/}, Schemapedia\footnote{http://schemapedia.com/} and Sindice\footnote{http://sindice.com/} to see if there existed any term we could use. Alongside popularity, the other criteria we took into account to select vocabularies are:
+\begin{itemize}
+\item the similitude between the concepts and terms present in the vocabulary, and the concepts needed to represent the data ;
+\item whether the vocabulary was created as part of a bigger project: this means it is the result of a consensus rather than the vision of a sole individual on the domain.
+\end{itemize}
+
+In the end, we selected the following vocabularies: 
+\begin{itemize}
+\item FOAF\footnote{http://xmlns.com/foaf/spec/}: the Friend Of A Friend vocabulary defines terms for describing persons and their relations to other people and objects. We use it to describe people at EURECOM. 
+\item DC terms\footnote{http://dublincore.org/documents/dcmi-terms/}
+\item Participation\footnote{http://vocab.org/participation/schema}: The participation ontology is a simple model for describing the roles that people play within groups. As discussed later, we subclass the class part:Role in the REVE ontology, to describe roles played by people inside EURECOM. 
+\item AIISO\footnote{http://vocab.org/aiiso/schema}: The Academic Institution Internal Structure Ontology provides classes and properties to describe the internal organizational structure of an academic institution. We use the aiiso:Course and aiiso:KnowledgeGrouping classes to define courses and tracks. 
+\item BIBO\footnote{http://bibliontology.com/specification}:  The Bibliographic Ontology describe bibliographic things on the semantic Web in RDF. It has been inspired by many existing document description metadata formats. We use it to describe the articles in EURECOM's scientific publications repository. 
+\item LODE\footnote{http://linkedevents.org/ontology/}: The ontology for Linking Open Descriptions of Events is an ontology for publishing descriptions of historical events as Linked Data, and is designed to be compatible with other event-related vocabularies and ontologies. We use the predicates lode:atTime, lode:atPlace and lode:involvedAgent to describe course sessions. 
+%check if it's involved or involvedAgent
+%\item DUL
+\item OWL-Time\footnote{http://www.w3.org/TR/owl-time/}
+\item Rooms\footnote{http://vocab.deri.ie/rooms}
+\end{itemize}
 \section{REVE - the Research and Education Vocabulary for EURECOM}
 \section{First data model}
 %graphs, graphs, graphs
@@ -90,6 +121,7 @@ One of the difficulties with this project is that we had to think about the data
 
 
 \chapter{Data conversion}
+%A word on naming the entities somewhere
 %Quick word on R2RDF somewhere
 \section{Accessing the data} 
 %Quickly describe the web service, show example of JSON
@@ -120,5 +152,5 @@ One of the difficulties with this project is that we had to think about the data
 %Clean up data
 %Align with other datasets
 %Build more applications
-
+\bibliography{biblio}
 \end{document}
