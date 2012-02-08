@@ -28,7 +28,7 @@ In order to achieve these goals, new technologies were developed:
 \item SPARQL Update, a companion language for SPARQL, enables modifying a data source. %(It should soon become a W3C recommendation.)
 \end{itemize}
 
-See~\cite{Heath2011} if you want to learn more about the Linked Data paradigm. 
+More information on the Linked Data paradigm can be found in~\cite{Heath2011}. 
 
 \section*{Motivation for the project}
 There is a trend to increase government transparency by releasing more and more public sector information on the web as linked data. The first initiative of the kind was data.gov.uk in the United Kingdom, which was followed by similar projects around the world. 
@@ -79,21 +79,22 @@ Applications
 
 
 \chapter{Data model and design of our ontology}
+Publishing data in RDF format does not make it automatically useful and reusable. It is very important to choose carefully the way the data will be modeled, and to document this. This is the most time-consuming task in such a project, but it is well worth it: a well-designed data model will help future application developers consume the data, and combine it with external datasets. 
 \section{Available data}
-One of the difficulties with this project is that we had to think about the data model before actually getting access to the data. To have a clearer idea of what data was stored at EURECOM, I had a look at the internet and intranet sites of the institute. The information available there is mainly about: 
+One of the difficulties with this project is that we had to think about the data model \emph{before} actually getting access to the data, and therefore, before knowing exactly what data would be exposed. To have a clearer idea of what data was stored at EURECOM, I had a look at the internet and intranet sites of the institute. The information available there is mainly about: 
 \begin{itemize}
 \item people (teachers, researchers, doctoral students, staff members), 
 \item research outputs, 
 \item courses. 
 \end{itemize}
-Assuming these would be the datasets we would access later on, we designed an RDF data model. The aim of this model is to fit the data accurately, as well as to make the data reusable by third parties. 
+Assuming these would be the datasets we would access later on, we designed an RDF data model. %The aim of this model is to fit the data accurately, as well as to make the data reusable by third parties. 
  
 \section{Choice of external vocabularies}
 To achieve re-usability, it is paramount to represent data using vocabularies that are used by other projects as well. This way, the data will be easier to consume for existing applications. Furthermore, the fact that a vocabulary was accepted by the community as a de facto standard is a good hint that this vocabulary is well designed, and well fitted to its domain. 
 
-%tools to find out about vocabs : 
+Yet, since there are still relatively few universities publishing their data as Linked Data, we could not rely only on popularity to make choices. Besides, each dataset being unique, there are relationships that we wanted to represent, to which we did not find any equivalent in the other projects' datasets. In this case, we used tools such as Schema-Cache\footnote{http://schemacache.com/}, Schemapedia\footnote{http://schemapedia.com/} and Sindice\footnote{http://sindice.com/} to see if there existed any term we could use. 
 
-Yet, since there are still relatively few universities publishing their data as Linked Data, we could not rely only on popularity to make choices. Besides, each dataset being unique, there are relationships that we wanted to represent, to which we did not find any equivalent in the other projects' datasets. In this case, we used tools such as Schema-Cache\footnote{http://schemacache.com/}, Schemapedia\footnote{http://schemapedia.com/} and Sindice\footnote{http://sindice.com/} to see if there existed any term we could use. Alongside popularity, the other criteria we took into account to select vocabularies are:
+Alongside popularity, the other criteria we took into account to select vocabularies are:
 \begin{itemize}
 \item the similitude between the concepts and terms present in the vocabulary, and the concepts needed to represent the data ;
 \item whether the vocabulary was created as part of a bigger project: this means it is the result of a consensus rather than the vision of a sole individual on the domain.
@@ -102,17 +103,40 @@ Yet, since there are still relatively few universities publishing their data as 
 In the end, we selected the following vocabularies: 
 \begin{itemize}
 \item FOAF\footnote{http://xmlns.com/foaf/spec/}: the Friend Of A Friend vocabulary defines terms for describing persons and their relations to other people and objects. We use it to describe people at EURECOM. 
-\item DC terms\footnote{http://dublincore.org/documents/dcmi-terms/}
+\item Dublin Core terms\footnote{http://dublincore.org/documents/dcmi-terms/}: this vocabulary is a set of generic metadata terms whose purpose is to describe numeric and physical resources. We use for example the predicate dc:creator to represent the relationship between a document and its creator. 
 \item Participation\footnote{http://vocab.org/participation/schema}: The participation ontology is a simple model for describing the roles that people play within groups. As discussed later, we subclass the class part:Role in the REVE ontology, to describe roles played by people inside EURECOM. 
 \item AIISO\footnote{http://vocab.org/aiiso/schema}: The Academic Institution Internal Structure Ontology provides classes and properties to describe the internal organizational structure of an academic institution. We use the aiiso:Course and aiiso:KnowledgeGrouping classes to define courses and tracks. 
 \item BIBO\footnote{http://bibliontology.com/specification}:  The Bibliographic Ontology describe bibliographic things on the semantic Web in RDF. It has been inspired by many existing document description metadata formats. We use it to describe the articles in EURECOM's scientific publications repository. 
 \item LODE\footnote{http://linkedevents.org/ontology/}: The ontology for Linking Open Descriptions of Events is an ontology for publishing descriptions of historical events as Linked Data, and is designed to be compatible with other event-related vocabularies and ontologies. We use the predicates lode:atTime, lode:atPlace and lode:involvedAgent to describe course sessions. 
-%check if it's involved or involvedAgent
 %\item DUL
-\item OWL-Time\footnote{http://www.w3.org/TR/owl-time/}
-\item Rooms\footnote{http://vocab.deri.ie/rooms}
+\item OWL-Time\footnote{http://www.w3.org/TR/owl-time/}: This ontology provides a vocabulary for expressing facts about topological relations among instants and intervals, together with information about durations, and about datetime information. We use it to describe the temporal aspects of course sessions. 
+\item Rooms\footnote{http://vocab.deri.ie/rooms}: It's simple vocabulary for describing the rooms in a building, which we use to describe the rooms and buildings where courses take place. 
 \end{itemize}
+
+
 \section{REVE - the Research and Education Vocabulary for EURECOM}
+Some of the concepts we need to represent the data are specific to EURECOM, so we defined a set of new terms. When it was possible, we defined these terms as extensions of existing terms. 
+
+The vocabulary is specified using the RDFS and OWL languages. The latest specification can be found in RDF format at the following address: \texttt{https://github.com/aegazet/REVE-Ontology}
+
+\subsection{Modeling issue: what is a course ?} %TODO:title
+One of the main modeling issues we encountered was due to a particularity of the french language: the word ``cours'' can mean many different things, even when we restrict ourselves to the context of a school. For instance, it can designate a lecture, or a course. We also had to make the distinction between a course which took place in a given semester, and the general subject of the course. E.g., ``WebSem - Spring 2010'' and ``WebSem - Spring 2011'' are two modules which both treated the same subject --- an introduction to the Semantic Web --- but they took place in different times, and different people were registered for them. 
+
+In such cases, it is essential to discuss the issue with experts on the domain we try to model. Here we asked Alexia Cepero, the Student's Pedagogy Officer of EURECOM, what was the correct representation. This led us to define the two following classes:
+\begin{itemize}
+\item Course: \emph{a teaching unit. A course is composed of several course sessions.}
+\item Course session: \emph{a course session is a punctual event on which teacher and students gather, for a given course.}
+\end{itemize}
+Counter intuitive as it might seem, there is no concept representing the unity of subject between, for instance, ``WebSem - Spring 2010'' and ``WebSem - Spring 2011''. But in the data we publish, we can still hint at a relationship between the two instances, for example by stating they have the same \texttt{aiiso:code} attribute. 
+
+\subsection{Representing an n-ary relation}
+Another issue we encountered, but was easier to solve, resulted from an assumption I made on the data which turned out to be false. I had assumed the credits one can earn by successfully completing a course only depended on the course itself. It turns out that it also depends on the track of study the student is following at EURECOM. 
+
+In other words, what I had modeled as a (course, credit) relationship is actually a (course, credit, track) relationship. The minor trouble with this, is that such a relationship cannot be represented with a single triple. 
+
+This is a common situation in ontology modeling. Good modeling practices have therefore been identified by the community: ontology patterns for representing n-ary relations in RDF and OWL are presented in a W3C working group note\footnote{http://www.w3.org/TR/swbp-n-aryRelations/}. We picked the first pattern described in this note, which consists in creating a new class and n new properties to represent the n-ary relation. 
+%insert graph representing the result
+
 \section{First data model}
 %graphs, graphs, graphs
 \section{Present state of the data}
