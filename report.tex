@@ -138,8 +138,36 @@ This is a common situation in ontology modeling. Good modeling practices have th
 %insert graph representing the result
 
 \section{First data model}
+This first model was developed having in mind the data I had observed on the various sites of the school. Therefore, it is much more complete than what has been implemented so far, mainly because a lot of data has not been exposed yet. This preliminary model is documented here in the hope that it will be useful for future developments of the project. 
+
+You will find as annexes several graphs illustrating this model. Each graph is focused on a particular domain: persons, documents, and courses. 
+
+\subsection{Persons}
+This model was inspired by data that is visible on EURECOM's public staff directory. 
+
+\subsection{Documents}
+This model is mainly a subset of the Bibliographic Ontology.
+
+\subsubsection*{Representing a list of authors}
+%add bit on the importance of ordering
+There are two options for representing an article's list of authors through the predicate \texttt{bibo:authorList}: the range of this property is the union of the classes  \texttt{rdf:Seq} and  \texttt{rdf:List}. Both of these classes are \emph{container} classes, they were designed to represent sets of objects, which is not an easy task with triples. But they are quite different:
+\begin{itemize}
+\item \texttt{rdf:List} is a linked list: instances of this class have an \texttt{rdf:first} attribute pointing at the \emph{head} of the list, and an \texttt{rdf:rest} attribute pointing at the \emph{tail} of the list (another \texttt{rdf:List}). The end of the list is indicated by setting the \texttt{rdf:rest} to \texttt{rdf:nil}. 
+\item \texttt{rdf:Seq} is more like a table: an instance of this class has attributes of the form \texttt{rdf:{\_}1}, \texttt{rdf:{\_}2}, ... \texttt{rdf:{\_}n} pointing at the elements of the list. 
+\end{itemize}
+
+The two approaches have upsides and downsides. Using \texttt{rdf:List}, you can indicate exactly what the elements of the list are, which you cannot with \texttt{rdf:Seq}. Indeed the Semantic Web is built on an \emph{open world assumption}: the absence of a statement does not mean that the statement is false. In other words, you can state that an \texttt{rdf:Seq} has \emph{at least} elements, but you cannot state that there are no other elements. 
+
+On the other hand, if you use \texttt{rdf:List} to represent your data, you will need a lot of instances of \texttt{rdf:List}. This makes the structure of the data complicated, and in general hard to query. The more so as, since it makes no sense to give a globally unique identifier to every \texttt{rdf:List} in your data, this approach leads to creating \emph{blank nodes} for them. Blank nodes are nodes without a URI, and it is good practice to avoid them whenever possible, as stated in~\cite{Heath2011}:
+\begin{quotation}
+``The scope of blank nodes is limited to the document in which they appear, meaning it is not possible to create RDF links to them from external documents, reducing the potential for interlinking between different Linked Data sources. In addition, it becomes much more difficult to merge data from different sources when blank nodes are used, as there is no URI to serve as a common key.''
+\end{quotation}
+
+This motivated our final decision to use \texttt{rdf:Seq} to represent the list of authors. 
+% -> for future developments of the project
 %graphs, graphs, graphs
 \section{Present state of the data}
+% -> to start consuming data now
 %graph of what can actually be found in the triplestore at the moment
 
 
