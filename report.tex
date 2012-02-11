@@ -137,7 +137,7 @@ In other words, what I had modeled as a (course, credit) relationship is actuall
 This is a common situation in ontology modeling. Good modeling practices have therefore been identified by the community: ontology patterns for representing n-ary relations in RDF and OWL are presented in a W3C working group note\footnote{http://www.w3.org/TR/swbp-n-aryRelations/}. We picked the first pattern described in this note, which consists in creating a new class and n new properties to represent the n-ary relation. 
 %insert graph representing the result
 
-\section{First data model}
+\section{First data model} \label{sec:1stdatamodel}
 This first model was developed having in mind the data I had observed on the various sites of the school. Therefore, it is much more complete than what has been implemented so far, mainly because a lot of data has not been exposed yet. This preliminary model is documented here in the hope that it will be useful for future developments of the project. 
 
 You will find as annexes several graphs illustrating this model. Each graph is focused on a particular domain: persons, documents, and courses. 
@@ -146,17 +146,16 @@ You will find as annexes several graphs illustrating this model. Each graph is f
 This model was inspired by data that is visible on EURECOM's public staff directory. 
 
 \subsection{Documents}
-This model is mainly a subset of the Bibliographic Ontology.
-
+This model is mainly a subset of the Bibliographic Ontology. 
+%transition !?
 \subsubsection*{Representing a list of authors}
-%add bit on the importance of ordering
-There are two options for representing an article's list of authors through the predicate \texttt{bibo:authorList}: the range of this property is the union of the classes  \texttt{rdf:Seq} and  \texttt{rdf:List}. Both of these classes are \emph{container} classes, they were designed to represent sets of objects, which is not an easy task with triples. But they are quite different:
+There are two options for representing an article's list of authors through the predicate \texttt{bibo:authorList}: the range of this property is the union of the classes  \texttt{rdf:Seq} and  \texttt{rdf:List}. Both of these classes are \emph{container} classes, that is to say they were designed to represent sets of objects, which is not an easy task with triples. It is generally advised not to use container classes in RDF, unless the order of the elements is important. Here the order does matter, so we had a closer look at those classes to make our choice: 
 \begin{itemize}
 \item \texttt{rdf:List} is a linked list: instances of this class have an \texttt{rdf:first} attribute pointing at the \emph{head} of the list, and an \texttt{rdf:rest} attribute pointing at the \emph{tail} of the list (another \texttt{rdf:List}). The end of the list is indicated by setting the \texttt{rdf:rest} to \texttt{rdf:nil}. 
 \item \texttt{rdf:Seq} is more like a table: an instance of this class has attributes of the form \texttt{rdf:{\_}1}, \texttt{rdf:{\_}2}, ... \texttt{rdf:{\_}n} pointing at the elements of the list. 
 \end{itemize}
 
-The two approaches have upsides and downsides. Using \texttt{rdf:List}, you can indicate exactly what the elements of the list are, which you cannot with \texttt{rdf:Seq}. Indeed the Semantic Web is built on an \emph{open world assumption}: the absence of a statement does not mean that the statement is false. In other words, you can state that an \texttt{rdf:Seq} has \emph{at least} elements, but you cannot state that there are no other elements. 
+The two approaches have upsides and downsides. Using \texttt{rdf:List}, you can indicate exactly what the elements of the list are, which you cannot with \texttt{rdf:Seq}. Indeed the Semantic Web is built on an \emph{open world assumption}: the absence of a statement does not mean that the statement is false. In other words, you can state that an \texttt{rdf:Seq} has \emph{at least} n elements, but you cannot state that there are no other elements. 
 
 On the other hand, if you use \texttt{rdf:List} to represent your data, you will need a lot of instances of \texttt{rdf:List}. This makes the structure of the data complicated, and in general hard to query. The more so as, since it makes no sense to give a globally unique identifier to every \texttt{rdf:List} in your data, this approach leads to creating \emph{blank nodes} for them. Blank nodes are nodes without a URI, and it is good practice to avoid them whenever possible, as stated in~\cite{Heath2011}:
 \begin{quotation}
@@ -169,31 +168,228 @@ This motivated our final decision to use \texttt{rdf:Seq} to represent the list 
 \section{Present state of the data}
 % -> to start consuming data now
 %graph of what can actually be found in the triplestore at the moment
+As stated in \ref{sec:1stdatamodel}, the data that has been translated in RDF so far in this project only fits a subset of the general data model we imagined. The graph 
+%insert ref to graph
+in annex represents this subset. To start consume data now, application developers can refer to this graph to know what triples they can find in the triplestore. 
+
+This kind of documentation is essential to make data reusable. Sadly, as I looked around for similar initiatives, I noticed it is often missing, even in larger scale projects. Let us remind here that publishing data in RDF format does not make it automatically reusable: if there is no information regarding the data model and the vocabulary used, the application developer has no way of guessing what information is available, and how to retrieve it. 
 
 
 
 \chapter{Data conversion}
+Once the data model has been defined, we can move on to a more concrete stage: the translation of data into RDF. 
 %A word on naming the entities somewhere
 %Quick word on R2RDF somewhere
-\section{Accessing the data} 
+\section{Getting the data} 
 %Quickly describe the web service, show example of JSON
-\section{Building RDF triples with Python}
+In the early stages of the project, the plan was to give me access to a dump of a relational database containing the interesting information. Yet for various reasons (practical, legal, ...) it was decided after a few weeks that the IT department would instead set up a web service serving JSON files for me to process. 
+
+In the weeks preceding this change of strategy, I had started to get familiar with R2RML, a language for expressing mappings from relational databases to RDF datasets\footnote{http://www.w3.org/TR/r2rml/}. I tested in particular db2triples\footnote{http://blog.antidot.net/2011/10/07/db2triples-une-implementation-de-r2rml-et-directmapping-en-open-source/}, an open-source implementation of R2RML by the french firm Antidot. In the end, this was not used for the project, but could be very useful for future developments. 
+
+The JSON files served by the web service have the following format: 
+\begin{verbatim}
+{"status":"successful",
+"request_uri":"http:\/\/intranet-v2.eurecom.fr\/data\/...",
+"label":"Courses list - 2004",
+"count":0,
+"response":[]}
+\end{verbatim}
+The \texttt{status} attribute states whether or not the file could be retrieved successfully. The data is in the \texttt{response} attribute. The format of the response depends on the file. The different types of files presently available are: 
+\begin{itemize}
+\item course: files describing courses contain the full and abbreviated names of the courses, the list of teachers for a given course, its abstract, ...
+\item course session: files describing course sessions repeat some of the information given in course files, and contain info on the sessions (date and hour, room and teacher involved)
+\item publications:  these files contain articles' title, list of authors, the name of the conference where an article was presented, as well as the date and place of the conference
+\item teacher, researcher, doctor, phd: these files describe people in terms of the \emph{role(s)} they hold or have held at EURECOM
+\end{itemize}
+
+%So I present it here shortly, before presenting the web service. 
+%\subsection{R2RML: RDB to RDF Mapping Language}
+
+\section{Building RDF triples with rdflib}
 %Justify choice of Python : easy and fast to test things, good existing tools to work with RDF, and for now we don't care much about fast-executing code since the conversion is done once and for all - it's more about testing feasibility
+\subsection{Why Python?}
+As Python is a very popular scripting language, there exist good tools to work with RDF in Python. Besides, with Python it is easy and fast to test things, and easy to work with JSON files. The drawback of using a scripting language rather than, say, Java, or any other compiled language, is a lesser speed of execution. But at this stage of the project, the conversion is done once and for all -- it is more about testing feasibility -- so I did not worry much about execution speed, and chose to use Python and the rdflib library to make the data conversion.
+
+\subsection{The rdflib library}
 %A few words on rdflib
+The rdflib package is intended to provide core RDF types and interfaces for working with RDF. 
+
+The primary interface that rdflib exposes for working with RDF is \texttt{Graph}. rdflib graphs have ordinary set operations (e.g. \texttt{add()} to add a triple) plus methods that search triples and return them in arbitrary order. They are best thought of as a set of 3-item triples. 
+
+Elements of a triple are created using the following classes:
+\begin{itemize}
+\item \texttt{URIRef} for URI references
+\item \texttt{Literal} for literals (datatypes and language tags are supported)
+\item \texttt{BNode} for blank nodes
+\end{itemize}
+
+With extensions provided in the rdfextras library, it is possible to store the triples directly in a triplestore. Here, I used the serialization capacities of rdflib: a graph is easily serialized in RDF/XML format, and saved in a file.
+
+ Moreover, rdflib provides a \texttt{parse()} method which not only loads a graph from a file, but can also retrieve files from the web. 
+
+rdflib also has a convenient \texttt{Namespace} class, with which fully qualified URIs in the namespace can be constructed by accessing a \texttt{Namespace} object like a dictionary:
+\begin{verbatim}
+>>> DCT = rdflib.Namespace("http://purl.org/dc/terms/")
+>>> DCT["creator"]
+rdflib.term.URIRef('http://purl.org/dc/terms/creator')
+\end{verbatim}
+
+More information on how to use rdflib is available on the library's documentation pages\footnote{http://readthedocs.org/docs/rdflib/en/latest/}.
+
+\subsection{URI scheme}
+I took the following conventions to assign URIs to the entities described in the data:
+\begin{itemize}
+\item the base URL for the dataset is \texttt{http://data.eurecom.fr/}
+\item every resource gets a URI of the form: \\\texttt{http://data.eurecom.fr/<domain>/<id>}  \\where \texttt{<domain>} corresponds to the type of the entity, and is one of the following:
+\begin{itemize}
+\item \texttt{course}
+\item \texttt{semester}
+\item \texttt{people}
+\item \texttt{publication}
+\item \texttt{session}
+\item \texttt{room}
+\item \texttt{track}
+\item \texttt{role}
+\item \texttt{department}
+\item \texttt{event}
+\end{itemize}
+\item for the  \texttt{<id>} part of the URI, I generally used the integers that identify the entities in the original database records, and are present in the JSON files. 
+\item for the conferences, there are no such identifiers in the database, only strings of characters describing the event (e.g.``ISM 2011, IEEE International Symposium on Multimedia, December 5-7, 2011, Dana Point, CA, US''), so the identifier is the MD5 hash of this string.
+\end{itemize}
+
 %Snippets of code, explain conversion strategy
-\section{Enriching the data with an external source: GeoNames}
+\subsection{Conversion strategy}
+The conversion process is pretty simple. It boils down to reading sequentially the input JSON files, and apply the ``rules'' defined in our RDF data model, and in the URI scheme. 
+
+First thing to do is to get a file from the web service, using the \texttt{urllib} module. The file is then parsed into a Python dictionary using the \texttt{json} module, and the elements of the \texttt{response} array are parsed individually. 
+
+In general, an RDF triple is generated for every attribute of every element, then added to one of the following graphs: courses, sessions, semesters, tracks, people, roles, publications, events, rooms, departments. This splitting of the triples in several graphs results in the creation of several RDF files, each containing information on a particular domain. 
+
+\section{Linking data to an external source: GeoNames}
 %Explain choice of source : widely used service, URIs for the resources that can be built using their geocoding webservice, thus fitting the data we had at hand (country code and city name)
+At this point of the data conversion, we have information about articles that were presented at conferences all around the world. But we do not have much geographical information about the conferences. The JSON files contain, for each article, the name of the city where the conference took place, as well as the name and the ISO two-letter code for the country:
+\begin{verbatim}
+city": "Cape Town",
+"country": {
+    "id": "country/za",
+    "shortlabel_en": "SOUTH AFRICA",
+    "longlabel_en": null
+}
+\end{verbatim}
+
+This information is enough to do some geocoding\footnote{from Wikipedia: \emph{Geocoding is the process of finding associated geographic coordinates (often expressed as latitude and longitude) from other geographic data, such as street addresses, or zip codes (postal codes). }}, so as, for example, to be able to represent the conferences' locations on a map. The geocoding service I used is GeoNames\footnote{http://www.geonames.org/}, a popular geographical database available and accessible through various Web services. Each geographical entity it describes has a unique integer assigned to it, as well as a URI to be used in semantic web applications. GeoNames data are linked to DBPedia, the project publishing content from Wikipedia as linked data. 
+
 %Show code and GeoNames's WS URL
+The geocoding service is available through a REST API. This is the query to retrieve information about Cape Town, South Africa:\\
+\texttt{http://ws.geonames.org/searchJSON?q=\%22Cape\%20Town\%22\&country=za}
+
+And this is the response, in JSON format:
+\begin{verbatim}
+{
+  "totalResultsCount": 43,
+  "geonames": [
+    {
+      "countryName": "South Africa",
+      "countryCode": "ZA",
+      "lng": 18.423218,
+      "name": "Cape Town",
+      "geonameId": 3369157,
+      "lat": -33.925839,
+      ...
+    }
+  ]
+}
+\end{verbatim}
+
+From this response, I extract the geonameID, use it to construct the URI for the place, using the scheme: \texttt{http://sws.geonames.org/<geonameID>}, and use this URI reference in new triples. I also store the latitude and longitude in RDF format for later use. Indeed, GeoNames does not provide an official SPARQL endpoint, so every application developer willing to get their data directly in RDF format has to replicate the data locally (or to use an unofficial SPARQL endpoint.)
 %They don't have their own official SPARQL endpoint so we store their (lat, long) data locally. (Would it be worth it to store everything ?)
 \section{Loading triples in a triplestore using SPARQL Update}
 
+The last step of the conversion consists in automating the loading of the triples into a triplestore.
+
+To do so, I used the SPARQL Update language. It is not a W3C recommendation yet, but should soon become one. It has been mature for some time now. Consequently, most of the popular triplestores support it. 
+
+The principle is simple: the update request is sent to the SPARQL endpoint via the HTTP POST method by URL encoding the parameters. Here I use the LOAD command to load a local file into the triplestore:
+\begin{verbatim}
+LOAD <file:// ... > INTO GRAPH <http://data.eurecom.fr/rooms/>
+\end{verbatim}
+
+The triplestore is now loaded with the newly generated triples, and ready to answer queries. 
+%At the time of writing, I have only tested my script on a local Sesame server
+
+\section{How to use the scripts}
+%TODO: implement cycling over the geonames servers, merge the 2 scripts, then merge with the loading ?
+%TODO: accept parameters for the script, at least to specify the destination sparql endpoint
 
 
 \chapter{Showcase application : a map of EURECOM publications}
 %Intro: there are no killer app for the SW, it enables to build many new services, it's up to the programmer to get inspiration from the data
-%Present Exhibit
-%Explain how the data is queried (show queries) and translated as JSON for Exhibit
-%Screenshots & url
+%There is no \emph{killer app} for the Semantic Web. Rather, it helps build richer applications than before, and much faster than before. 
+To demonstrate what can be done with the newly generated triples, I developed a map of the world with pins showing every conference where EURECOM researchers presented a paper. This was made easy thanks to the SIMILE Exhibit project. Exhibit\footnote{http://simile-widgets.org/exhibit/} is a tool to create data visualization web pages. With a bit of experience, one can create an Exhibit page within an hour or two. 
+
+The capital thing that is required to use Exhibit, is to prepare your data: it has to be in a particular JSON format. The minimal Exhibit JSON file contains an array named \texttt{items}, whose elements have at least a \texttt{label} and a \texttt{type} attribute:
+\begin{verbatim}
+{  items: [
+    {  label:  "Jane Smith",
+       type:   "Person"  }
+  ]
+}
+\end{verbatim}
+
+Some data importing services are proposed, through the SIMILE Babel project\footnote{http://simile.mit.edu/babel/}. Unfortunately, the conversion from RDF/XML (or another serialization like N3) is poorly made. In particular, it fails to use the URI of an RDF term as the identifier for that resource in the JSON file. As a consequence, all the \emph{links} in the linked data get broken. So I resorted to implementing the conversion myself, in Python again, with help from the \texttt{SPARQLWrapper} module. 
+
+First, all data about papers that were presented at conferences are retrieved by issuing the following SPARQL query:
+\begin{verbatim}
+PREFIX rdf:<http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:<http://purl.org/dc/terms/>
+PREFIX foaf:<http://xmlns.com/foaf/0.1/>
+PREFIX lode:<http://linkedevents.org/ontology/>
+PREFIX geo:<http://www.w3.org/2003/01/geo/wgs84_pos#>
+PREFIX bibo:<http://purl.org/ontology/bibo/>
+
+SELECT DISTINCT 
+  ?pub ?title ?date ?conf 
+  ?conf_title ?lat ?long ?author
+WHERE {
+  ?pub rdf:type foaf:Document .
+  ?pub dct:title ?title .
+  ?pub dct:date ?date .
+  ?pub bibo:presentedAt ?conf .
+  ?conf rdfs:label ?conf_title .
+  ?conf lode:atPlace ?place .
+  ?place geo:lat ?lat .
+  ?place geo:long ?long .
+  ?pub dct:creator ?author
+}
+\end{verbatim}
+The response, in JSON format, is then transformed and put into a Python dictionary. A second query is issued to get information about the authors: 
+\begin{verbatim}
+PREFIX rdf:<http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dct:<http://purl.org/dc/terms/>
+PREFIX foaf:<http://xmlns.com/foaf/0.1/>
+PREFIX part:<http://purl.org/vocab/participation/schema#>
+
+SELECT DISTINCT 
+  ?author ?fn ?ln ?roletype ?depname
+WHERE {
+  ?pub rdf:type foaf:Document .
+  ?pub dct:creator ?author .
+  ?author foaf:firstName ?fn .
+  ?author foaf:lastName ?ln .
+  ?author part:holder_of ?role . 
+  ?role rdf:type ?roletype . 
+  OPTIONAL {
+    ?role part:role_at ?dep . 
+    ?dep rdfs:label ?depname
+  }
+}\end{verbatim}
+The response is also parsed in the dictionary. The dictionary gets enriched by some information specific for Exhibit to work with the data, then is serialized into a JSON file. 
+
+The resulting application can currently be viewed at the following address:
+\texttt{perso.telecom-paristech.fr/\textasciitilde{}gazet/map.html}
+%Screenshots
 %Needed improvements
 
 
